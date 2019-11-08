@@ -1,8 +1,9 @@
 import {Vector, V} from "Vector";
 
+export const DEFAULT_MASS = 0.02;
 export const GAS_STIFFNESS = 3;//k = 3;//8.314;
 export const REST_DENSITY = 998.29;//ρ0 = 998.29;//100;
-export let VISCOSITY = 10.5;
+export const VISCOSITY = 10.5;
 
 export class Particle {
     public pos: Vector;
@@ -18,11 +19,11 @@ export class Particle {
     public pressure: number;
     public neighbors: number[];
 
-    constructor(pos: Vector,
-                mass: number = 0.02,
-                restDensity: number = REST_DENSITY,
-                viscosity: number = VISCOSITY,
-                gasConstant: number = GAS_STIFFNESS) {
+    public constructor(pos: Vector,
+                       mass: number = DEFAULT_MASS,
+                       restDensity: number = REST_DENSITY,
+                       viscosity: number   = VISCOSITY,
+                       gasConstant: number = GAS_STIFFNESS) {
         this.pos = pos;
         this.vel = V();
         this.acc = V();
@@ -36,7 +37,7 @@ export class Particle {
         this.pressure  = 0;
         this.neighbors = [];
     }
-    accelerate(a: Vector): void {
+    public accelerate(a: Vector): void {
         // Newton's law a = F/m
         this.acc = a;
     }

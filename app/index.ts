@@ -1,28 +1,15 @@
-import {SPH, bounds, ms} from "./SPH";
+import {SPH, bounds, ms, SPHPropsBuilder} from "./SPH";
 import {V} from "Vector";
 
 // Load canvas to draw
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext("2d");
 
 let sph = undefined;
 
-let particleDrawRadius = 0.008;
+const particleDrawRadius = 0.008;
 
-function init() {
-    sph = new SPH();
-    sph.init();
-
-    draw();
-}
-
-window.addEventListener('keyup', onKeyUp, false);
-window.addEventListener('resize', resize, false);
-
-
-resize();
-
-function draw() {
+function draw(): void {
     const particles = sph.particles;
     const walls = sph.walls;
 
@@ -33,9 +20,9 @@ function draw() {
     ctx.scale(canvas.width / (bounds.r - bounds.l) / zoom, canvas.height / (bounds.t - bounds.b) / zoom);
     ctx.translate(bounds.l + bounds.r * (zoom / 2.0 - 0.5), bounds.b + bounds.t*(zoom / 2.0 + 0.5));
 
-    for (var i = 0; i < particles.length; i++) {
+    for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
-        ctx.fillStyle = p.restDensity >= 998 ? '#017eec' : '#ef2c22';
+        ctx.fillStyle = p.restDensity >= 998 ? "#017eec" : "#ef2c22";
         ctx.beginPath();
         ctx.arc(p.pos.x, -p.pos.y, particleDrawRadius, 0, 2*Math.PI);
         ctx.fill();
@@ -43,8 +30,8 @@ function draw() {
     }
 
     ctx.lineWidth = 0.01;
-    ctx.strokeStyle = '#999';
-    for (let wall of walls) {
+    ctx.strokeStyle = "#999";
+    for (const wall of walls) {
         ctx.beginPath();
         const dir = V(1-Math.abs(wall.normal.x), 1-Math.abs(wall.normal.y));
         const x1 =  wall.pos.x - dir.x*1000 - wall.normal.x*0.01;
@@ -60,20 +47,27 @@ function draw() {
     ctx.restore();
 }
 
+function init(): void {
+    sph = new SPH(new SPHPropsBuilder().build());
+    sph.init();
 
-var interval = undefined;
-function pause() {
+    draw();
+}
+
+
+let interval = undefined;
+function pause(): void {
     clearInterval(interval);
     interval = undefined;
 }
-function play() {
+function play(): void {
     interval = setInterval(function() {
         sph.step();
         draw();
     }, ms);
 }
 
-function onKeyUp(e) {
+function onKeyUp(e): void {
     if (e.keyCode == 65) {
         if (interval)
             pause();
@@ -93,7 +87,7 @@ function onKeyUp(e) {
     }
 }
 
-function resize() {
+function resize(): void {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
@@ -106,3 +100,9 @@ document.body.onload = () => {
     play();
     console.log("play");
 }
+
+window.addEventListener("keyup", onKeyUp, false);
+window.addEventListener("resize", resize, false);
+
+
+resize();

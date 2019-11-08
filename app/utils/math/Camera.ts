@@ -18,7 +18,7 @@ export class Camera {
 
     private dirty: boolean;
 
-    public constructor(width: number, height: number, startPos: Vector = V(0, 0), startZoom: number = 1) {
+    public constructor(width: number, height: number, startPos: Vector = V(0, 0), startZoom = 1) {
         this.width = width;
         this.height = height;
         this.pos = startPos;

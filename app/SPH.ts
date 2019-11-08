@@ -14,96 +14,113 @@ import {WALL_K,
         WALL_DAMPING,
         Wall} from "./Wall";
 
-const g = V(0, -9.81);
+import {BoundingBox} from "math/BoundingBox";
+
+const DEFAULT_SOLVER_ITERATIONS = 5;
+const DEFAULT_RELAXATION = 5000;
+const DEFAULT_SURFACE_TENSION = 0.0728;
+const DEFAULT_SURFACE_TENSION_THRESHOLD = 7.065;
+
+const DEFAULT_GRAVITATIONAL_ACC = V(0, -9.81);
+
+export const bounds = {l: 0, r: 0.8, b: 0, t: 0.5};
 
 export const ms = 16;
 const dt = 1.0 / 100.0;
 
-const SOLVER_ITERATIONS = 5;
-const RELAXATION = 5000;
-const SURFACE_TENSION = 0.0728;
-const SURFACE_THRESHOLD = 7.065;
+const nx = 20;
+const ny = 20;
 
-export let bounds = {l: 0, r: 0.8, b: 0, t: 0.5};
+export interface SPHProps {
+    solverIterations: number;
+    relaxation: number;
+    surfaceTension: number;
+    surfaceTensionThreshold: number;
 
-let nx = 20;
-let ny = 20;
+    gravitationalAcc: Vector;
 
-let scene = 0;
+    dt: number;
+}
+
+export class SPHPropsBuilder {
+    private props: SPHProps;
+
+    public constructor() {
+        this.props = {
+            solverIterations: DEFAULT_SOLVER_ITERATIONS,
+            relaxation: DEFAULT_RELAXATION,
+            surfaceTension: DEFAULT_SURFACE_TENSION,
+            surfaceTensionThreshold: DEFAULT_SURFACE_TENSION_THRESHOLD,
+            gravitationalAcc: DEFAULT_GRAVITATIONAL_ACC,
+            dt: 1/100
+        }
+    }
+
+    public withSolverIterations(solverIterations: number): SPHPropsBuilder {
+        this.props.solverIterations = solverIterations;
+        return this;
+    }
+
+    public withRelaxation(relaxation: number): SPHPropsBuilder {
+        this.props.relaxation = relaxation;
+        return this;
+    }
+
+    public withSurfaceTension(surfaceTension: number): SPHPropsBuilder {
+        this.props.surfaceTension = surfaceTension;
+        return this;
+    }
+
+    public withSurfaceTensionThreshold(surfaceTensionThreshold: number): SPHPropsBuilder {
+        this.props.surfaceTensionThreshold = surfaceTensionThreshold;
+        return this;
+    }
+
+    public withGravitationalAcceleration(gravitationalAcc: Vector): SPHPropsBuilder {
+        this.props.gravitationalAcc = gravitationalAcc;
+        return this;
+    }
+
+    public withΔt(dt: number): SPHPropsBuilder {
+        this.props.dt = dt;
+        return this;
+    }
+
+    public build(): SPHProps {
+        return this.props;
+    }
+}
 
 export class SPH {
     public time: number;
     public particles: Particle[];
     public walls: Wall[];
 
-    constructor() {
+    private props: SPHProps;
+
+    public constructor(props: SPHProps) {
         this.time = 0;
         this.particles = [];
         this.walls = [new Wall(V(1, 0), V(bounds.l, 0)), new Wall(V(-1,  0), V(bounds.r, 0)),
                       new Wall(V(0, 1), V(0, bounds.b)), new Wall(V( 0, -1), V(0, bounds.t))];
+
+        this.props = props;
     }
-    init() {
+    public init(): void {
         let dx = (bounds.r - bounds.l) / nx;
         let dy = (bounds.t - bounds.b) / ny;
 
-        if (scene == 0 || scene == 1 || scene == 4 || scene == 5 || scene == 6 || scene == 7) {
-            for (let x = bounds.l; x < bounds.r; x += dx) {
-                for (let y = bounds.b; y < bounds.t; y += dy) {
-                    this.particles.push(new Particle(V(x+Math.random()/60+(bounds.r - bounds.l)/100,
-                                                       y+(bounds.r - bounds.l)/100), 0.02));
-                }
-            }
-        } else if (scene == 2) {
-            for (let x = bounds.l; x < bounds.r; x += dx) {
-                for (let y = bounds.b; y < bounds.t; y += dy) {
-                    const density = (Math.random() < 0.5 ? 450.0 : REST_DENSITY);
-                    this.particles.push(new Particle(V(x+Math.random()/60+(bounds.r - bounds.l)/100,
-                                                       y+(bounds.r - bounds.l)/100), 0.02, density));
-                }
-            }
-        } else if (scene == 3) {
-            // Generate ground
-            dy = (bounds.t/5 - bounds.b) / ny;
-            for (let x = bounds.l; x < bounds.r; x += dx) {
-                for (let y = bounds.b; y < bounds.t/5; y += dy) {
-                    this.particles.push(new Particle(V(x+Math.random()/60+(bounds.r - bounds.l)/100,
-                                                       y+(bounds.r - bounds.l)/100), 0.02));
-                }
-            }
-            // Generate circle
-            let yy = bounds.t * 4/5;
-            let xx = (bounds.r - bounds.l) / 2;
-            let r = bounds.t * 0.8/5;
-            dx = (2*r) / 15;
-            dy = (2*r) / 15;
-            for (let x = xx - r; x <= xx + r; x += dx) {
-                for (let y = yy - r; y <= yy + r; y += dy) {
-                    if ((x-xx)*(x-xx) + (y-yy)*(y-yy) <= r*r)
-                        this.particles.push(new Particle(V(x+Math.random()/60+(bounds.r - bounds.l)/100,
-                                                           y+(bounds.r - bounds.l)/100), 0.02));
-                }
+        for (let x = bounds.l; x < bounds.r; x += dx) {
+            for (let y = bounds.b; y < bounds.t; y += dy) {
+                this.particles.push(new Particle(V(x+Math.random()/60+(bounds.r - bounds.l)/100,
+                                                   y+(bounds.r - bounds.l)/100), 0.02));
             }
         }
         console.log("Particles: " + this.particles.length);
     }
-    step() {
-        let freq1 = 5;
-        let freq2 = 5;
-        if (scene == 5)
-            freq2 = 3;
-        if (scene == 0 || scene == 4 || scene == 5)
-            this.walls[0].pos.x = (1 - Math.cos(this.time*freq1))/5.0 + bounds.l;
-        if (scene == 4 || scene == 5)
-            this.walls[1].pos.x = -(1 - Math.cos(this.time*freq2))/5.0 + bounds.r;
-
-        if (scene == 7)
-            this.walls[0].pos.x = (1 - Math.cos(this.time*freq1))/10.0 + bounds.l;
-
-        if (scene == 6) {
-            let p = new Particle(V(bounds.l + 0.05, bounds.t));
-            p.vel = V(2, 0);
-            this.particles.push(p);
-        }
+    public step(): void {
+        const freq1 = 5;
+        this.walls[0].pos.x = (1 - Math.cos(this.time*freq1))/5.0 + bounds.l;
 
         this.collectNeighbors();
 
@@ -137,16 +154,14 @@ export class SPH {
             const particle = this.particles[i];
             const neighbors = particle.neighbors;
 
-            let f_pressure  = V(0, 0);
-            let f_viscosity = V(0, 0);
-            let f_surface   = V(0, 0);
+            let fPressure  = V(0, 0);
+            let fViscosity = V(0, 0);
+            let fSurface   = V(0, 0);
 
-            let f_gravity = g.scale(particle.density);
+            const fGravity = this.props.gravitationalAcc.scale(particle.density);
 
             let colorFieldNormal = V(0, 0);
             let colorFieldLaplacian = 0;
-
-            let neighborCount = 0;
 
             for (let j = 0; j < neighbors.length; j++) {
                 const jj = neighbors[j];
@@ -155,16 +170,15 @@ export class SPH {
                 const r = particle.pos.sub(neighbor.pos);
                 const r2 = r.len2();
 
-                neighborCount++;
                 const poly6Gradient = Wpoly6Gradient(r, r2);
                 const spikyGradient = WspikyGradient(r, r2);
 
                 if (i != jj) {
-                    f_pressure = f_pressure.add(spikyGradient.scale(-neighbor.mass * (particle.pressure + neighbor.pressure) / (2 * neighbor.density)));
+                    fPressure = fPressure.add(spikyGradient.scale(-neighbor.mass * (particle.pressure + neighbor.pressure) / (2 * neighbor.density)));
 
-                    f_viscosity = f_viscosity.add((neighbor.vel.sub(particle.vel)).scale(
-                                    (particle.viscosity + neighbor.viscosity) / 2 * neighbor.mass *
-                                    WviscosityLaplacian(r2) / neighbor.density));
+                    fViscosity = fViscosity.add((neighbor.vel.sub(particle.vel)).scale(
+                        (particle.viscosity + neighbor.viscosity) / 2 * neighbor.mass *
+                            WviscosityLaplacian(r2) / neighbor.density));
                 }
 
                 colorFieldNormal = colorFieldNormal.add(poly6Gradient.scale(neighbor.mass / neighbor.density));
@@ -173,11 +187,11 @@ export class SPH {
             }
 
             const colorFieldNormalMagnitude = colorFieldNormal.len();
-            if (colorFieldNormalMagnitude > SURFACE_THRESHOLD) {
-                f_surface = colorFieldNormal.scale(-SURFACE_TENSION * colorFieldLaplacian / colorFieldNormalMagnitude);
+            if (colorFieldNormalMagnitude > this.props.surfaceTension) {
+                fSurface = colorFieldNormal.scale(-this.props.surfaceTension * colorFieldLaplacian / colorFieldNormalMagnitude);
             }
 
-            const force = f_pressure.add(f_viscosity).add(f_surface).add(f_gravity);
+            const force = fPressure.add(fViscosity).add(fSurface).add(fGravity);
 
             particle.accelerate(force.scale(1.0 / particle.density));
 
@@ -188,7 +202,7 @@ export class SPH {
 
 
         // Apply positional-based fluid constraints
-        let newPositions = new Array<Vector>(this.particles.length).fill(V(0,0));
+        const newPositions = new Array<Vector>(this.particles.length).fill(V(0,0));
         for (let i = 0; i < this.particles.length; i++) {
             this.particles[i].vel = this.particles[i].vel.add( this.particles[i].acc.scale(dt) ); // apply exterior forces
             newPositions[i] = this.particles[i].pos.add( this.particles[i].vel.scale(dt) ); // predict position
@@ -197,8 +211,8 @@ export class SPH {
         this.collectNeighbors();
 
         let iter = 0;
-        while (iter < SOLVER_ITERATIONS) {
-            let lambdas = new Array(this.particles.length).fill(0);
+        while (iter < this.props.solverIterations) {
+            const lambdas = new Array<number>(this.particles.length).fill(0);
             for (let i = 0; i < this.particles.length; i++) {
                 const particle = this.particles[i];
                 const neighbors = particle.neighbors;
@@ -209,7 +223,7 @@ export class SPH {
                 let dWpi = V(0,0);
 
                 for (let j = 0; j < neighbors.length; j++) {
-                    let jj = neighbors[j];
+                    const jj = neighbors[j];
                     if (i == jj)
                         continue;
                     const neighbor = this.particles[jj];
@@ -226,23 +240,23 @@ export class SPH {
                 gradSqrNorm = gradSqrNorm / (particle.restDensity*particle.restDensity);
                 gradSqrNorm += dWpi.len2();
 
-                let Ci = particle.density / particle.restDensity - 1;
-                lambdas[i] = -Ci / (gradSqrNorm + RELAXATION)
+                const Ci = particle.density / particle.restDensity - 1;
+                lambdas[i] = -Ci / (gradSqrNorm + this.props.relaxation);
             }
 
 
-            let deltaPositions = new Array(this.particles.length).fill(V(0,0));
+            const deltaPositions = new Array<Vector>(this.particles.length).fill(V(0,0));
             for (let i = 0; i < this.particles.length; i++) {
                 const particle = this.particles[i];
                 const neighbors = particle.neighbors;
 
                 let pos = V(0,0);
                 for (let j = 0; j < neighbors.length; j++) {
-                    let jj = neighbors[j];
+                    const jj = neighbors[j];
                     if (i == jj)
                         continue;
 
-                    const neighbor = this.particles[jj];
+                    // const neighbor = this.particles[jj];
 
                     const r = newPositions[i].sub(newPositions[jj]);
                     const r2 = r.len2();
@@ -272,7 +286,7 @@ export class SPH {
             }
         }
     }
-    collisionForce(particle) {
+    public collisionForce(particle: Particle): void {
         for (let i = 0; i < this.walls.length; i++) {
             const wall = this.walls[i];
 
@@ -284,7 +298,7 @@ export class SPH {
             }
         }
     }
-    collectNeighbors(newPositions = undefined) {
+    public collectNeighbors(newPositions: Vector[] = undefined): void {
         // Clear previous neighbors
         for (let i = 0; i < this.particles.length; i++)
             this.particles[i].neighbors = [];
