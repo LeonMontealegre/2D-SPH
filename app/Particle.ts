@@ -6,6 +6,8 @@ export const REST_DENSITY = 998.29;//ρ0 = 998.29;//100;
 export const VISCOSITY = 10.5;
 
 export class Particle {
+    public id: number;
+
     public pos: Vector;
     public vel: Vector;
     public acc: Vector;
@@ -19,11 +21,13 @@ export class Particle {
     public pressure: number;
     public neighbors: number[];
 
-    public constructor(pos: Vector,
+    public constructor(id: number,
+                        pos: Vector,
                        mass: number = DEFAULT_MASS,
                        restDensity: number = REST_DENSITY,
                        viscosity: number   = VISCOSITY,
                        gasConstant: number = GAS_STIFFNESS) {
+        this.id  = id;
         this.pos = pos;
         this.vel = V();
         this.acc = V();

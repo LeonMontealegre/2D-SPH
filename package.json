@@ -6,16 +6,23 @@
   "scripts": {
     "build": "webpack --config webpack.development.js --mode=development",
     "watch": "npm run build -- --watch",
+    "test": "jest",
     "lint": "eslint --ext .ts ./app/"
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {},
+  "dependencies": {
+    "seedrandom": "^3.0.5"
+  },
   "devDependencies": {
+    "@types/jest": "^24.0.22",
+    "@types/seedrandom": "^2.4.28",
     "@typescript-eslint/eslint-plugin": "^2.6.1",
     "@typescript-eslint/parser": "^2.6.1",
     "copy-webpack-plugin": "^5.0.5",
     "eslint": "^6.6.0",
+    "jest": "^24.9.0",
+    "ts-jest": "^24.1.0",
     "ts-loader": "^6.2.1",
     "typescript": "^3.7.2",
     "webpack": "^4.41.2",

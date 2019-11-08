@@ -1,3 +1,5 @@
+import seedrandom from "seedrandom";
+
 import {V, Vector} from "Vector";
 
 import {Wpoly6,
@@ -106,14 +108,18 @@ export class SPH {
 
         this.props = props;
     }
-    public init(): void {
+    public init(seed?: string): void {
+        seedrandom(seed, { global: true });
+
         let dx = (bounds.r - bounds.l) / nx;
         let dy = (bounds.t - bounds.b) / ny;
 
+        let i = 0;
         for (let x = bounds.l; x < bounds.r; x += dx) {
             for (let y = bounds.b; y < bounds.t; y += dy) {
-                this.particles.push(new Particle(V(x+Math.random()/60+(bounds.r - bounds.l)/100,
+                this.particles.push(new Particle(i, V(x+Math.random()/60+(bounds.r - bounds.l)/100,
                                                    y+(bounds.r - bounds.l)/100), 0.02));
+                i++;
             }
         }
         console.log("Particles: " + this.particles.length);
