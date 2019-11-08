@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "outDir": "./build/",
+    "sourceMap": true,
+    "noImplicitAny": false,
+    "lib": ["es2019", "dom"],
+    "moduleResolution": "node",
+    "module": "es6",
+    "target": "es5",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "downlevelIteration": true,
+    "allowJs": true,
+    "typeRoots" : [
+      "site/public/ts/shared/utils/typings",
+      "node_modules/@types" // path to your typings directory (relative to tsconfig.json)
+    ],
+    "baseUrl": ".",
+    "paths": {
+        "Vector": ["app/utils/math/Vector"],
+        "math/*": ["app/utils/math/*"],
+        "app/*": ["app/*"],
+    }
+
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}

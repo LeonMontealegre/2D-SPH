@@ -1,0 +1,50 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta name="description" content="Smoothed Particle Hydrodynamics">
+        <meta name="viewport" content="width=device-width", initial-scale="1">
+        <meta charset="utf-8">
+
+        <title>Smoothed Particle Hydrodynamics</title>
+        <link rel="stylesheet" href="stylesheet.css">
+    </head>
+    <body>
+        <div id="main">
+            <canvas id="canvas">
+                Your browser doesn't appear to support the
+                <code>&lt;canvas&gt;</code> element.
+            </canvas>
+
+            <script src="Bundle.js"></script>
+
+            <script>
+                window.addEventListener('message', function(event) {
+                    const args = event.data;
+                    if (args.bounds)
+                        bounds = args.bounds;
+                    if (args.nx)
+                        nx = args.nx;
+                    if (args.ny)
+                        ny = args.ny;
+                    if (args.scene)
+                        scene = args.scene;
+                    if (args.viscosity) {
+                        VISCOSITY = Number(args.viscosity) + 0.0;
+                        for (let i = 0; i < sph.particles.length; i++) {
+                            sph.particles[i].viscosity = VISCOSITY;
+                        }
+                    }
+
+                    if (args.init)
+                        init();
+
+                    if (args.keyup)
+                        onKeyUp(args.keyup);
+
+                    if (args.start)
+                        play();
+                });
+            </script>
+        </div>
+    </body>
+</html>

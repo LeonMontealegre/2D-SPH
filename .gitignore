@@ -1,0 +1,21 @@
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+node_modules
+coverage
+build
+site/data/config.txt
+site/public/js/combined-min.js
+tests/index.js
+package-lock.json
+yarn.lock
+
+# IntelliJ
+.idea/
+
+# Secrets (to prevent devs from pushing api keys to the repo)
+site/secrets/
